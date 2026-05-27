@@ -1,2 +1,15 @@
-build
-!.settings
+build/
+
+# IDE/tooling local state
+.settings/
+.vscode/
+.extSettings
+
+# CubeMX/Workbench process artifacts
+*.log
+*.ioc.wb
+*.wbdef
+*.settings
+
+# Local/project metadata not required for command-line build
+.mxproject
