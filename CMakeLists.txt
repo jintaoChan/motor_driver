@@ -35,7 +35,14 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME})
 
 # SOES integration (external source tree)
-set(SOES_DIR "C:/Users/10100/Documents/Projects/SOES/soes")
+# set(SOES_DIR "C:/Users/10100/Documents/Projects/SOES/soes")
+set(SOES_DIR "/home/jintao/GithubRepo/SOES/soes" CACHE PATH
+    "Path to SOES source tree")
+if(DEFINED ENV{SOES_DIR} AND NOT "$ENV{SOES_DIR}" STREQUAL "")
+    set(SOES_DIR "$ENV{SOES_DIR}" CACHE PATH "Path to SOES source tree" FORCE)
+endif()
+message(STATUS "Using SOES_DIR: ${SOES_DIR}")
+
 set(SOES_HAL_DIR "${SOES_DIR}/hal/stm32g474-lan9252")
 
 # SOES expects these variables to be defined by the parent project.
@@ -61,6 +68,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    Src/ethercat/cia402/cia402.c
     Src/ethercat/soes_lan9252_port.c
     Src/ethercat/slave_objectlist.c
 )
@@ -78,11 +86,25 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # both Drivers and MCSDK; adding the repository paths here ensures all sub-targets
 # (MotorControl, STM32_Drivers) always resolve missing headers without needing to
 # manually copy files after every regeneration.
-target_include_directories(stm32cubemx INTERFACE
-    D:/STM32Cube/Repository/STM32Cube_FW_G4_V1.6.2/Drivers/STM32G4xx_HAL_Driver/Inc
-    D:/STM32Cube/Repository/MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Inc
-    D:/STM32Cube/Repository/MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/G4xx/Inc
-)
+set(STM32_REPO_ROOT "" CACHE PATH
+    "Path to STM32Cube Repository root (contains STM32Cube_FW_G4_V1.6.2 and MCSDK_v6.4.2-Full)")
+if(DEFINED ENV{STM32_REPO_ROOT} AND NOT "$ENV{STM32_REPO_ROOT}" STREQUAL "")
+    set(STM32_REPO_ROOT "$ENV{STM32_REPO_ROOT}" CACHE PATH
+        "Path to STM32Cube Repository root (contains STM32Cube_FW_G4_V1.6.2 and MCSDK_v6.4.2-Full)" FORCE)
+endif()
+
+if(STM32_REPO_ROOT)
+    target_include_directories(stm32cubemx INTERFACE
+        ${STM32_REPO_ROOT}/STM32Cube_FW_G4_V1.6.2/Drivers/STM32G4xx_HAL_Driver/Inc
+        ${STM32_REPO_ROOT}/MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Inc
+        ${STM32_REPO_ROOT}/MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/G4xx/Inc
+    )
+    message(STATUS "Using STM32 repository include paths from: ${STM32_REPO_ROOT}")
+else()
+    message(WARNING
+        "STM32_REPO_ROOT is not set. If build fails on missing HAL/LL/MCSDK headers, "
+        "set STM32_REPO_ROOT to your STM32Cube repository root path.")
+endif()
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

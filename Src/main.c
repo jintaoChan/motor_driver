@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "ecat_slv.h"
+#include "esc.h"
+#include "ethercat/cia402/cia402.h"
 #include "ethercat/soes_lan9252_port.h"
 #include "ethercat/utypes.h"
 /* USER CODE END Includes */
@@ -84,9 +86,30 @@ static void MX_NVIC_Init(void);
 
 /* LAN9252 SPI command */
 #define LAN9252_SPI_READ_CMD    0x03U
+#define LAN9252_SPI_WRITE_CMD   0x02U
 
 /* LAN9252 register addresses */
 #define LAN9252_REG_ID_REV      0x0050U   /* Chip ID[31:16] should be 0x9252 */
+#define LAN9252_REG_GPIO_DIR    0x0152U
+#define LAN9252_REG_GPIO_OUT    0x0F10U
+#define LAN9252_REG_GPIO_IN     0x0F18U
+
+static void LAN9252_SPI_WriteReg(uint16_t addr, uint32_t value)
+{
+  uint8_t tx[7] = {
+    LAN9252_SPI_WRITE_CMD,
+    (uint8_t)(addr >> 8),
+    (uint8_t)(addr & 0xFF),
+    (uint8_t)(value & 0xFF),
+    (uint8_t)((value >> 8) & 0xFF),
+    (uint8_t)((value >> 16) & 0xFF),
+    (uint8_t)((value >> 24) & 0xFF),
+  };
+
+  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_RESET);
+  HAL_SPI_Transmit(&hspi1, tx, sizeof(tx), 2000);
+  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_SET);
+}
 
 /**
  * @brief  Read a 32-bit register from LAN9252 via SPI
@@ -112,6 +135,18 @@ static uint32_t LAN9252_SPI_ReadReg(uint16_t addr)
         | ((uint32_t)rx[1] << 8)  |  (uint32_t)rx[0];
 }
 
+static uint16_t LAN9252_SPI_ReadReg16(uint16_t addr)
+{
+  return (uint16_t)(LAN9252_SPI_ReadReg(addr) & 0xFFFFU);
+}
+
+static void LAN9252_SPI_WriteReg16(uint16_t addr, uint16_t value)
+{
+  uint32_t reg = LAN9252_SPI_ReadReg(addr);
+  reg = (reg & 0xFFFF0000U) | (uint32_t)value;
+  LAN9252_SPI_WriteReg(addr, reg);
+}
+
 static void LAN9252_SPI_Init(void)
 {
   uint32_t id = 0;
@@ -129,13 +164,25 @@ static void LAN9252_SPI_Init(void)
 
 void cb_get_inputs(void)
 {
-  Obj.Buttons.Button1 =
-      (HAL_GPIO_ReadPin(Start_Stop_GPIO_Port, Start_Stop_Pin) == GPIO_PIN_SET) ? 1U : 0U;
+  Obj.Parameters.Lan9252Gpi = LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_IN);
 }
 
 void cb_set_outputs(void)
 {
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, Obj.LEDs.LED0 ? GPIO_PIN_SET : GPIO_PIN_RESET);
+  CIA402_Update(
+  (uint8_t)(ESCvar.ALstatus & ESCREG_AL_STATEMASK),
+      Obj.Parameters.ControlWord,
+      Obj.Parameters.OperationMode,
+      &Obj.Parameters.StatusWord,
+      &Obj.Parameters.OperationModeDisplay);
+
+  LAN9252_SPI_WriteReg16(LAN9252_REG_GPIO_DIR, Obj.Parameters.Lan9252GpioDirection);
+  LAN9252_SPI_WriteReg16(LAN9252_REG_GPIO_OUT, Obj.Parameters.Lan9252Gpo);
+
+  HAL_GPIO_WritePin(
+      LD2_GPIO_Port,
+      LD2_Pin,
+      Obj.Parameters.McuLed ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 /* USER CODE END 0 */
@@ -187,7 +234,13 @@ int main(void)
   soes_cfg.use_interrupt = 0;
   soes_cfg.watchdog_cnt = 150;
 
-  Obj.Parameters.Multiplier = 1U;
+  Obj.Parameters.Lan9252Gpi = LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_IN);
+  Obj.Parameters.Lan9252GpioDirection = LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_DIR);
+  Obj.Parameters.Lan9252Gpo = LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_OUT);
+  Obj.Parameters.McuLed = 0U;
+  Obj.Parameters.ControlWord = 0U;
+  Obj.Parameters.OperationMode = 0;
+  CIA402_Init(&Obj.Parameters.StatusWord, &Obj.Parameters.OperationModeDisplay);
 
   ecat_slv_init(&soes_cfg);
   /* USER CODE END 2 */

@@ -7,18 +7,14 @@ typedef struct
 {
     struct
     {
-        uint8_t Button1;
-    } Buttons;
-
-    struct
-    {
-        uint8_t LED0;
-        uint8_t LED1;
-    } LEDs;
-
-    struct
-    {
-        uint32_t Multiplier;
+        uint16_t ControlWord;
+        uint16_t StatusWord;
+        int8_t OperationMode;
+        int8_t OperationModeDisplay;
+        uint16_t Lan9252Gpi;
+        uint16_t Lan9252GpioDirection;
+        uint16_t Lan9252Gpo;
+        uint8_t McuLed;
     } Parameters;
 } _Objects;
 
