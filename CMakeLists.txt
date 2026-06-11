@@ -68,6 +68,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    Src/ethercat/cia402/cia402.c
     Src/ethercat/soes_lan9252_port.c
     Src/ethercat/slave_objectlist.c
 )
