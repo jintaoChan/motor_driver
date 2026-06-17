@@ -1195,7 +1195,7 @@
 									<DefaultData>6D6F746F725F647269766572</DefaultData>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1208,7 +1208,7 @@
 									<DefaultData>312E3000</DefaultData>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1281,7 +1281,7 @@
 									<SubItem><Name>SubIndex 005</Name><Info><DefaultData>08030170</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1297,7 +1297,7 @@
 									<SubItem><Name>SubIndex 003</Name><Info><DefaultData>10010160</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1328,7 +1328,7 @@
 									<SubItem><Name>SubIndex 001</Name><Info><DefaultData>0016</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1342,7 +1342,7 @@
 									<SubItem><Name>SubIndex 001</Name><Info><DefaultData>001a</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
-									<Access>ro</Access>
+									<Access>rw</Access>
 									<Category>o</Category>
 								</Flags>
 							</Object>
@@ -1410,10 +1410,10 @@
 				<Fmmu>MBoxState</Fmmu>
 				<Sm MinSize="34" MaxSize="192" DefaultSize="128" StartAddress="#x1000" ControlByte="#x26" Enable="1">MBoxOut</Sm>
 				<Sm MinSize="34" MaxSize="192" DefaultSize="128" StartAddress="#x1100" ControlByte="#x22" Enable="1">MBoxIn</Sm>
-				<Sm DefaultSize="12" StartAddress="#x1200" ControlByte="#x64" Enable="1">Outputs</Sm>
-				<Sm DefaultSize="12" StartAddress="#x1300" ControlByte="#x20" Enable="1">Inputs</Sm>
+				<Sm DefaultSize="8" StartAddress="#x1200" ControlByte="#x64" Enable="1">Outputs</Sm>
+				<Sm DefaultSize="5" StartAddress="#x1300" ControlByte="#x20" Enable="1">Inputs</Sm>
 				<Mailbox DataLinkLayer="true">
-					<CoE SdoInfo="true" SegmentedSdo="true" CompleteAccess="true" PdoAssign="true"/>
+					<CoE SdoInfo="true" SegmentedSdo="true" CompleteAccess="true" PdoAssign="true" PdoConfig="true"/>
 				</Mailbox>
 				<Dc>
 					<OpMode>
@@ -1450,7 +1450,7 @@
 			<Module>
 				<Type ModuleIdent="#x00009252">motor_driver axis</Type>
 				<Name>motor_driver PDO set</Name>
-				<RxPdo Fixed="1" Sm="2">
+				<RxPdo Fixed="0" Sm="2">
 					<Index DependOnSlot="true">#x1600</Index>
 					<Name>Outputs</Name>
 					<Entry><Index DependOnSlot="true">#x6040</Index><SubIndex>0</SubIndex><BitLen>16</BitLen><Name>Controlword</Name><DataType>UINT</DataType></Entry>
@@ -1459,7 +1459,7 @@
 					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>2</SubIndex><BitLen>16</BitLen><Name>LAN9252 GPO</Name><DataType>UINT</DataType></Entry>
 					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>3</SubIndex><BitLen>8</BitLen><Name>MCU LED</Name><DataType>USINT</DataType></Entry>
 				</RxPdo>
-				<TxPdo Fixed="1" Sm="3">
+				<TxPdo Fixed="0" Sm="3">
 					<Index DependOnSlot="true">#x1a00</Index>
 					<Name>Inputs</Name>
 					<Entry><Index DependOnSlot="true">#x6041</Index><SubIndex>0</SubIndex><BitLen>16</BitLen><Name>Statusword</Name><DataType>UINT</DataType></Entry>

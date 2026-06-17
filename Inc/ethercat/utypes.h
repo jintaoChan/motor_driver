@@ -12,7 +12,6 @@ typedef struct
         int8_t OperationMode;
         int8_t OperationModeDisplay;
         uint16_t Lan9252Gpi;
-        uint16_t Lan9252GpioDirection;
         uint16_t Lan9252Gpo;
         uint8_t McuLed;
     } Parameters;
