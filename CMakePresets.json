@@ -10,6 +10,12 @@
             "cacheVariables": {}
         },
         {
+            "name": "linux-ninja",
+            "hidden": true,
+            "inherits": "default",
+            "cacheVariables": {}
+        },
+        {
             "name": "windows-ninja",
             "hidden": true,
             "inherits": "default",
@@ -19,7 +25,7 @@
         },
         {
             "name": "Debug",
-            "inherits": "windows-ninja",
+            "inherits": "linux-ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }

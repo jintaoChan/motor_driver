@@ -518,7 +518,7 @@
 							</DataType>
 							<DataType>
 								<Name>DT1600</Name>
-								<BitSize>176</BitSize>
+								<BitSize>144</BitSize>
 								<SubItem>
 									<SubIdx>0</SubIdx>
 									<Name>SubIndex 000</Name>
@@ -553,22 +553,11 @@
 									</Flags>
 								</SubItem>
 								<SubItem>
-									<SubIdx>3</SubIdx>
-									<Name>SubIndex 003</Name>
-									<Type>UDINT</Type>
-									<BitSize>32</BitSize>
-									<BitOffs>80</BitOffs>
-									<Flags>
-										<Access>ro</Access>
-										<Category>o</Category>
-									</Flags>
-								</SubItem>
-								<SubItem>
 									<SubIdx>4</SubIdx>
 									<Name>SubIndex 004</Name>
 									<Type>UDINT</Type>
 									<BitSize>32</BitSize>
-									<BitOffs>112</BitOffs>
+									<BitOffs>80</BitOffs>
 									<Flags>
 										<Access>ro</Access>
 										<Category>o</Category>
@@ -579,7 +568,7 @@
 									<Name>SubIndex 005</Name>
 									<Type>UDINT</Type>
 									<BitSize>32</BitSize>
-									<BitOffs>144</BitOffs>
+									<BitOffs>112</BitOffs>
 									<Flags>
 										<Access>ro</Access>
 										<Category>o</Category>
@@ -889,7 +878,7 @@
 							</DataType>
 							<DataType>
 								<Name>DT7001</Name>
-								<BitSize>56</BitSize>
+								<BitSize>40</BitSize>
 								<SubItem>
 									<SubIdx>0</SubIdx>
 									<Name>SubIndex 000</Name>
@@ -903,7 +892,7 @@
 								</SubItem>
 								<SubItem>
 									<SubIdx>1</SubIdx>
-									<Name>LAN9252 GPIO Direction</Name>
+									<Name>LAN9252 GPO</Name>
 									<Type>UINT</Type>
 									<BitSize>16</BitSize>
 									<BitOffs>16</BitOffs>
@@ -914,21 +903,10 @@
 								</SubItem>
 								<SubItem>
 									<SubIdx>2</SubIdx>
-									<Name>LAN9252 GPO</Name>
-									<Type>UINT</Type>
-									<BitSize>16</BitSize>
-									<BitOffs>32</BitOffs>
-									<Flags>
-										<Access>rw</Access>
-										<Category>o</Category>
-									</Flags>
-								</SubItem>
-								<SubItem>
-									<SubIdx>3</SubIdx>
 									<Name>MCU LED</Name>
 									<Type>USINT</Type>
 									<BitSize>8</BitSize>
-									<BitOffs>48</BitOffs>
+									<BitOffs>32</BitOffs>
 									<Flags>
 										<Access>rw</Access>
 										<Category>o</Category>
@@ -1282,14 +1260,13 @@
 								<Index>#x1600</Index>
 								<Name>Outputs</Name>
 								<Type>DT1600</Type>
-								<BitSize>176</BitSize>
+								<BitSize>144</BitSize>
 								<Info>
-									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>05</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>04</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 001</Name><Info><DefaultData>10004060</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 002</Name><Info><DefaultData>08006060</DefaultData></Info></SubItem>
-									<SubItem><Name>SubIndex 003</Name><Info><DefaultData>10010170</DefaultData></Info></SubItem>
-									<SubItem><Name>SubIndex 004</Name><Info><DefaultData>10020170</DefaultData></Info></SubItem>
-									<SubItem><Name>SubIndex 005</Name><Info><DefaultData>08030170</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 004</Name><Info><DefaultData>10010170</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 005</Name><Info><DefaultData>08020170</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
 									<Access>ro</Access>
@@ -1413,10 +1390,9 @@
 								<Index>#x7001</Index>
 								<Name>LAN9252 Outputs</Name>
 								<Type>DT7001</Type>
-								<BitSize>56</BitSize>
+								<BitSize>40</BitSize>
 								<Info>
-									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>03</DefaultData></Info></SubItem>
-									<SubItem><Name>LAN9252 GPIO Direction</Name><Info><DefaultData>0000</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>02</DefaultData></Info></SubItem>
 									<SubItem><Name>LAN9252 GPO</Name><Info><DefaultData>0000</DefaultData></Info></SubItem>
 									<SubItem><Name>MCU LED</Name><Info><DefaultData>00</DefaultData></Info></SubItem>
 								</Info>
@@ -1475,9 +1451,8 @@
 					<Name>Outputs</Name>
 					<Entry><Index DependOnSlot="true">#x6040</Index><SubIndex>0</SubIndex><BitLen>16</BitLen><Name>Controlword</Name><DataType>UINT</DataType></Entry>
 					<Entry><Index DependOnSlot="true">#x6060</Index><SubIndex>0</SubIndex><BitLen>8</BitLen><Name>Modes of Operation</Name><DataType>SINT</DataType></Entry>
-					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>1</SubIndex><BitLen>16</BitLen><Name>LAN9252 GPIO Direction</Name><DataType>UINT</DataType></Entry>
-					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>2</SubIndex><BitLen>16</BitLen><Name>LAN9252 GPO</Name><DataType>UINT</DataType></Entry>
-					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>3</SubIndex><BitLen>8</BitLen><Name>MCU LED</Name><DataType>USINT</DataType></Entry>
+					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>1</SubIndex><BitLen>16</BitLen><Name>LAN9252 GPO</Name><DataType>UINT</DataType></Entry>
+					<Entry><Index DependOnSlot="true">#x7001</Index><SubIndex>2</SubIndex><BitLen>8</BitLen><Name>MCU LED</Name><DataType>USINT</DataType></Entry>
 				</RxPdo>
 				<TxPdo Fixed="1" Sm="3">
 					<Index DependOnSlot="true">#x1a00</Index>
