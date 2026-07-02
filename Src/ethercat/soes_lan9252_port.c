@@ -2,7 +2,7 @@
 
 #include "main.h"
 
-extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi3;
 
 static uint32_t soes_lock_nesting;
 static uint32_t soes_lock_primask;
@@ -26,11 +26,11 @@ static int soes_spi_txrx(const uint8_t *tx, uint8_t *rx, uint16_t len)
 
     if (rx != NULL)
     {
-        status = HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)tx, rx, len, HAL_MAX_DELAY);
+        status = HAL_SPI_TransmitReceive(&hspi3, (uint8_t *)tx, rx, len, HAL_MAX_DELAY);
     }
     else
     {
-        status = HAL_SPI_Transmit(&hspi1, (uint8_t *)tx, len, HAL_MAX_DELAY);
+        status = HAL_SPI_Transmit(&hspi3, (uint8_t *)tx, len, HAL_MAX_DELAY);
     }
 
     return (status == HAL_OK) ? 0 : -1;

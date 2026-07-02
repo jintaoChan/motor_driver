@@ -21,10 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+#include "encoder/biss_encoder.h"
 #include "ecat_slv.h"
-#include "esc.h"
 #include "ethercat/cia402/cia402.h"
+#include "ethercat/lan9252_app.h"
 #include "ethercat/soes_lan9252_port.h"
 #include "ethercat/utypes.h"
 /* USER CODE END Includes */
@@ -50,9 +50,10 @@ ADC_HandleTypeDef hadc2;
 
 CORDIC_HandleTypeDef hcordic;
 
-SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi3;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
@@ -64,6 +65,11 @@ _Objects Obj;
 
 static esc_cfg_t soes_cfg;
 
+volatile uint32_t g_biss_position = 0U;
+volatile uint8_t g_biss_error = 0U;
+volatile uint8_t g_biss_warning = 0U;
+volatile uint8_t g_biss_crc_ok = 0U;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,8 +80,9 @@ static void MX_ADC1_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_CORDIC_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_SPI1_Init(void);
+static void MX_SPI3_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -83,87 +90,6 @@ static void MX_NVIC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-/* LAN9252 SPI command */
-#define LAN9252_SPI_READ_CMD    0x03U
-
-/* LAN9252 register addresses */
-#define LAN9252_REG_ID_REV      0x0050U   /* Chip ID[31:16] should be 0x9252 */
-#define LAN9252_REG_GPIO_OUT    0x0F10U
-#define LAN9252_REG_GPIO_IN     0x0F18U
-
-/**
- * @brief  Read a LAN9252 system CSR register via direct SPI (full-duplex, 7 bytes).
- *         Only for LAN9252 host-side registers (e.g. ID_REV 0x0050).
- *         EtherCAT ESC registers must use ESC_read instead.
- */
-static uint32_t LAN9252_SPI_ReadSysCsr(uint16_t addr)
-{
-  uint8_t tx[7] = {
-    LAN9252_SPI_READ_CMD,
-    (uint8_t)(addr >> 8),
-    (uint8_t)(addr & 0xFFU),
-    0x00U, 0x00U, 0x00U, 0x00U,
-  };
-  uint8_t rx[7] = {0};
-
-  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_RESET);
-  HAL_SPI_TransmitReceive(&hspi1, tx, rx, sizeof(tx), 2000);
-  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_SET);
-
-  /* Data bytes arrive in rx[3..6], little-endian */
-  return ((uint32_t)rx[6] << 24) | ((uint32_t)rx[5] << 16)
-       | ((uint32_t)rx[4] <<  8) |  (uint32_t)rx[3];
-}
-
-static uint16_t LAN9252_ESC_ReadReg16(uint16_t addr)
-{
-  uint16_t value = 0U;
-  ESC_read(addr, &value, sizeof(value));
-  return value;
-}
-
-static void LAN9252_ESC_WriteReg16(uint16_t addr, uint16_t value)
-{
-  ESC_write(addr, &value, sizeof(value));
-}
-
-static void LAN9252_SPI_Init(void)
-{
-  uint32_t id = 0;
-  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_SET);
-  HAL_Delay(100);
-  HAL_GPIO_WritePin(ECAT_RST_GPIO_Port, ECAT_RST_Pin, GPIO_PIN_RESET);
-  HAL_Delay(100);
-  HAL_GPIO_WritePin(ECAT_RST_GPIO_Port, ECAT_RST_Pin, GPIO_PIN_SET);
-  HAL_Delay(100);
-  do
-  {
-    id = LAN9252_SPI_ReadSysCsr(LAN9252_REG_ID_REV);
-  } while((id >> 16) != 0x9252U);
-}
-
-void cb_get_inputs(void)
-{
-  Obj.Parameters.Lan9252Gpi = LAN9252_ESC_ReadReg16(LAN9252_REG_GPIO_IN);
-}
-
-void cb_set_outputs(void)
-{
-  CIA402_Update(
-  (uint8_t)(ESCvar.ALstatus & ESCREG_AL_STATEMASK),
-      Obj.Parameters.ControlWord,
-      Obj.Parameters.OperationMode,
-      &Obj.Parameters.StatusWord,
-      &Obj.Parameters.OperationModeDisplay);
-
-  LAN9252_ESC_WriteReg16(LAN9252_REG_GPIO_OUT, Obj.Parameters.Lan9252Gpo);
-
-  HAL_GPIO_WritePin(
-      LD2_GPIO_Port,
-      LD2_Pin,
-      Obj.Parameters.McuLed ? GPIO_PIN_SET : GPIO_PIN_RESET);
-}
 
 /* USER CODE END 0 */
 
@@ -201,18 +127,20 @@ int main(void)
   MX_ADC2_Init();
   MX_CORDIC_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
   MX_USART2_UART_Init();
   MX_MotorControl_Init();
-  MX_SPI1_Init();
-
-  /* Initialize interrupts */
-  MX_NVIC_Init();
+  MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-  
+
   LAN9252_SPI_Init();
   soes_cfg.user_arg = (void *)SOES_LAN9252_GetHwIf();
   soes_cfg.use_interrupt = 0;
   soes_cfg.watchdog_cnt = 150;
+
+  Obj.Parameters.Lan9252Gpi = LAN9252_GPIO_ReadInputs();
+  Obj.Parameters.Lan9252GpioDirection = LAN9252_GPIO_ReadDirection();
+  Obj.Parameters.Lan9252Gpo = LAN9252_GPIO_ReadOutputs();
   Obj.Parameters.McuLed = 0U;
   Obj.Parameters.ControlWord = 0U;
   Obj.Parameters.OperationMode = 0;
@@ -220,8 +148,8 @@ int main(void)
 
   ecat_slv_init(&soes_cfg);
 
-  Obj.Parameters.Lan9252Gpi = LAN9252_ESC_ReadReg16(LAN9252_REG_GPIO_IN);
-  Obj.Parameters.Lan9252Gpo = LAN9252_ESC_ReadReg16(LAN9252_REG_GPIO_OUT);
+  /* Initialize interrupts */
+  MX_NVIC_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -231,6 +159,7 @@ int main(void)
   {
 
     ecat_slv();
+    HAL_Delay(2);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -303,10 +232,10 @@ static void MX_NVIC_Init(void)
   HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 4, 1);
   HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
   /* TIM1_UP_TIM16_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
   /* ADC1_2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(ADC1_2_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
   /* EXTI15_10_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 0);
@@ -344,7 +273,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 1;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
@@ -375,7 +304,7 @@ static void MX_ADC1_Init(void)
   sConfigInjected.InjectedNbrOfConversion = 2;
   sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
   sConfigInjected.AutoInjectedConv = DISABLE;
-  sConfigInjected.QueueInjectedContext = DISABLE;
+  sConfigInjected.QueueInjectedContext = ENABLE;
   sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJEC_T1_TRGO;
   sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
   sConfigInjected.InjecOversamplingMode = DISABLE;
@@ -401,15 +330,6 @@ static void MX_ADC1_Init(void)
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = ADC_CHANNEL_8;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -470,7 +390,7 @@ static void MX_ADC2_Init(void)
   sConfigInjected.InjectedNbrOfConversion = 2;
   sConfigInjected.InjectedDiscontinuousConvMode = DISABLE;
   sConfigInjected.AutoInjectedConv = DISABLE;
-  sConfigInjected.QueueInjectedContext = DISABLE;
+  sConfigInjected.QueueInjectedContext = ENABLE;
   sConfigInjected.ExternalTrigInjecConv = ADC_EXTERNALTRIGINJEC_T1_TRGO;
   sConfigInjected.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONV_EDGE_RISING;
   sConfigInjected.InjecOversamplingMode = DISABLE;
@@ -520,42 +440,42 @@ static void MX_CORDIC_Init(void)
 }
 
 /**
-  * @brief SPI1 Initialization Function
+  * @brief SPI3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_SPI1_Init(void)
+static void MX_SPI3_Init(void)
 {
 
-  /* USER CODE BEGIN SPI1_Init 0 */
+  /* USER CODE BEGIN SPI3_Init 0 */
 
-  /* USER CODE END SPI1_Init 0 */
+  /* USER CODE END SPI3_Init 0 */
 
-  /* USER CODE BEGIN SPI1_Init 1 */
+  /* USER CODE BEGIN SPI3_Init 1 */
 
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 7;
-  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  /* USER CODE END SPI3_Init 1 */
+  /* SPI3 parameter configuration*/
+  hspi3.Instance = SPI3;
+  hspi3.Init.Mode = SPI_MODE_MASTER;
+  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi3.Init.NSS = SPI_NSS_SOFT;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi3.Init.CRCPolynomial = 7;
+  hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi3.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
+  if (HAL_SPI_Init(&hspi3) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN SPI1_Init 2 */
+  /* USER CODE BEGIN SPI3_Init 2 */
 
-  /* USER CODE END SPI1_Init 2 */
+  /* USER CODE END SPI3_Init 2 */
 
 }
 
@@ -656,6 +576,55 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_Encoder_InitTypeDef sConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4294967295;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC1Filter = 0;
+  sConfig.IC2Polarity = TIM_ICPOLARITY_RISING;
+  sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+  sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
+  sConfig.IC2Filter = 0;
+  if (HAL_TIM_Encoder_Init(&htim2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -734,10 +703,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ECAT_CS_GPIO_Port, ECAT_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, ECAT_CS_Pin|ENCODER_CLK_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(ECAT_RST_GPIO_Port, ECAT_RST_Pin, GPIO_PIN_RESET);
@@ -748,19 +714,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Start_Stop_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD2_Pin */
-  GPIO_InitStruct.Pin = LD2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : ECAT_CS_Pin */
   GPIO_InitStruct.Pin = ECAT_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(ECAT_CS_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ENCODER_CLK_Pin */
+  GPIO_InitStruct.Pin = ENCODER_CLK_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  HAL_GPIO_Init(ENCODER_CLK_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ENCODER_DATA_Pin */
+  GPIO_InitStruct.Pin = ENCODER_DATA_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ENCODER_DATA_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ECAT_RST_Pin */
   GPIO_InitStruct.Pin = ECAT_RST_Pin;

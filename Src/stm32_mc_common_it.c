@@ -61,6 +61,45 @@ void EXTI15_10_IRQHandler(void);
 void HardFault_Handler(void);
 void SysTick_Handler(void);
 
+void SPD_ENC_TIM_M1_IRQHandler(void);
+
+/**
+  * @brief  This function handles TIMx global interrupt request for M1 Speed Sensor.
+  * @param  None
+  */
+void SPD_ENC_TIM_M1_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPD_TIM_M1_IRQn 0 */
+
+  /* USER CODE END SPD_TIM_M1_IRQn 0 */
+
+  /* Encoder Timer UPDATE IT is dynamicaly enabled/disabled, checking enable state is required */
+  if (LL_TIM_IsEnabledIT_UPDATE(ENCODER_M1.TIMx) != 0U)
+  {
+    if (LL_TIM_IsActiveFlag_UPDATE(ENCODER_M1.TIMx) != 0U)
+    {
+      LL_TIM_ClearFlag_UPDATE(ENCODER_M1.TIMx);
+      (void)ENC_IRQHandler(&ENCODER_M1);
+
+      /* USER CODE BEGIN M1 ENCODER_Update */
+
+      /* USER CODE END M1 ENCODER_Update */
+    }
+    else
+    {
+      /* No other IT to manage for encoder config */
+    }
+  }
+  else
+  {
+    /* No other IT to manage for encoder config */
+  }
+
+  /* USER CODE BEGIN SPD_TIM_M1_IRQn 1 */
+
+  /* USER CODE END SPD_TIM_M1_IRQn 1 */
+}
+
 /* This section is present only when MCP over UART_A is used */
 /**
   * @brief  This function handles USART interrupt request.

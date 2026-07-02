@@ -45,7 +45,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define ECAT_COMM_TEST_MODE (1u)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -72,15 +71,12 @@ __attribute__((section (".ccmram")))
 void ADC1_2_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
-
-#if (ECAT_COMM_TEST_MODE == 1u)
-  LL_ADC_ClearFlag_JEOS(ADC1);
-  LL_ADC_ClearFlag_JEOS(ADC2);
-  return;
-#endif
+  LL_ADC_ClearFlag_JQOVF(ADC1);
+  LL_ADC_ClearFlag_JQOVF(ADC2);
 
   /* USER CODE END ADC1_2_IRQn 0 */
   LL_ADC_ClearFlag_JEOS(ADC1);
+  LL_ADC_ClearFlag_JEOS(ADC2);
   (void)TSK_HighFrequencyTask();
 
   /* USER CODE BEGIN ADC1_2_IRQn 1 */
@@ -103,11 +99,6 @@ void TIMx_UP_M1_IRQHandler(void)
 {
  /* USER CODE BEGIN TIMx_UP_M1_IRQn 0 */
 
-#if (ECAT_COMM_TEST_MODE == 1u)
-  LL_TIM_ClearFlag_UPDATE(TIM1);
-  return;
-#endif
-
  /* USER CODE END  TIMx_UP_M1_IRQn 0 */
 
   LL_TIM_ClearFlag_UPDATE(TIM1);
@@ -121,12 +112,6 @@ void TIMx_UP_M1_IRQHandler(void)
 void TIMx_BRK_M1_IRQHandler(void)
 {
   /* USER CODE BEGIN TIMx_BRK_M1_IRQn 0 */
-
-#if (ECAT_COMM_TEST_MODE == 1u)
-  LL_TIM_ClearFlag_BRK(TIM1);
-  LL_TIM_ClearFlag_BRK2(TIM1);
-  return;
-#endif
 
   /* USER CODE END TIMx_BRK_M1_IRQn 0 */
 

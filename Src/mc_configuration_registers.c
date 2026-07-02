@@ -44,20 +44,20 @@ static const ApplicationConfig_reg_t M1_ApplicationConfig_reg =
 {
   .maxMechanicalSpeed = 4500,
   .maxReadableCurrent = M1_MAX_READABLE_CURRENT,
-  .nominalCurrent     = 1.6,
-  .nominalVoltage     = 36,
+  .nominalCurrent     = 4,
+  .nominalVoltage     = 24,
   .driveType          = DRIVE_TYPE_M1,
 };
 
 //cstat !MISRAC2012-Rule-9.2
 static const MotorConfig_reg_t M1_MotorConfig_reg =
 {
-  .polePairs  = 7,
+  .polePairs  = 10,
   .ratedFlux  = 6.1,
-  .rs         = 0.43,
-  .ls         = 0.000338*1.000,
-  .ld         = 0.000338,
-  .maxCurrent = 1.6,
+  .rs         = 0.47,
+  .ls         = 0.0009*1.000,
+  .ld         = 0.0009,
+  .maxCurrent = 4,
   .name = "MAXON EC-I 100W"
 };
 

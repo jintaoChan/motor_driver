@@ -69,8 +69,10 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Src/ethercat/cia402/cia402.c
+    Src/ethercat/lan9252_app.c
     Src/ethercat/soes_lan9252_port.c
     Src/ethercat/slave_objectlist.c
+    Src/encoder/biss_encoder.c
 )
 
 # Add include paths
@@ -79,6 +81,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${SOES_HAL_DIR}
     ${SOES_DIR}/include/sys/gcc
     ${CMAKE_CURRENT_SOURCE_DIR}/Inc/ethercat
+    ${CMAKE_CURRENT_SOURCE_DIR}/Inc/encoder
 )
 
 # Supplement the stm32cubemx interface library with full HAL/LL and MCSDK headers

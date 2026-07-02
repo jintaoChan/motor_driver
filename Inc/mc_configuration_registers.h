@@ -121,11 +121,11 @@ typedef struct
 #define FLAG_MCP_OVER_UARTA        (1U << 1U)
 #define FLAG_MCP_OVER_UARTB        0U
 
-#define configurationFlag1_M1     (VBUS_SENSING_FLAG|TEMP_SENSING_FLAG)
+#define configurationFlag1_M1     (VBUS_SENSING_FLAG)
 #define configurationFlag2_M1     (QUASI_SYNC_FLAG)
 
 #define DRIVE_TYPE_M1              0
-#define PRIM_SENSOR_M1            EPLL
+#define PRIM_SENSOR_M1            EENCODER
 #define AUX_SENSOR_M1             0
 #define TOPOLOGY_M1               0
 

@@ -35,6 +35,41 @@
 /* USER CODE END Additional define */
 
 /**
+  * @brief  SpeedNPosition sensor parameters Motor 1 - Encoder.
+  */
+ENCODER_Handle_t ENCODER_M1 =
+{
+  ._Super =
+  {
+    .bElToMecRatio             = POLE_PAIR_NUM,
+    .hMaxReliableMecSpeedUnit  = (uint16_t)(1.15 * MAX_APPLICATION_SPEED_UNIT),
+    .hMinReliableMecSpeedUnit  = (uint16_t)(MIN_APPLICATION_SPEED_UNIT),
+    .bMaximumSpeedErrorsNumber = M1_SS_MEAS_ERRORS_BEFORE_FAULTS,
+    .hMaxReliableMecAccelUnitP = 65535,
+    .hMeasurementFrequency     = TF_REGULATION_RATE_SCALED,
+    .DPPConvFactor             = DPP_CONV_FACTOR,
+  },
+
+  .PulseNumber                 = M1_ENCODER_PPR * 4,
+  .SpeedSamplingFreqHz         = MEDIUM_FREQUENCY_TASK_RATE,
+  .SpeedBufferSize             = ENC_AVERAGING_FIFO_DEPTH,
+  .TIMx                        = TIM2,
+  .ICx_Filter                  = M1_ENC_IC_FILTER_LL,
+};
+
+/**
+  * @brief  Encoder Alignment Controller parameters Motor 1.
+  */
+EncAlign_Handle_t EncAlignCtrlM1 =
+{
+  .hEACFrequencyHz = MEDIUM_FREQUENCY_TASK_RATE,
+  .hFinalTorque    = FINAL_I_ALIGNMENT,
+  .hElAngle        = ALIGNMENT_ANGLE_S16,
+  .hDurationms     = M1_ALIGNMENT_DURATION,
+  .bElToMecRatio   = POLE_PAIR_NUM,
+};
+
+/**
   * @brief  SpeedNPosition sensor parameters Motor 1 - Base Class.
   */
 VirtualSpeedSensor_Handle_t VirtualSpeedSensorM1 =
@@ -56,24 +91,13 @@ VirtualSpeedSensor_Handle_t VirtualSpeedSensorM1 =
 };
 
 /**
-  * temperature sensor parameters Motor 1.
+  * Virtual temperature sensor parameters Motor 1.
   */
-RegConv_t TempRegConv_M1 =
-{
-  .regADC                = ADC1,
-  .channel               = MC_ADC_CHANNEL_8,
-  .samplingTime          = M1_TEMP_SAMPLING_TIME,
-  .data                  = 0
-};
-
 NTC_Handle_t TempSensor_M1 =
 {
-  .bSensorType             = REAL_SENSOR,
-  .hOverTempThreshold      = (uint16_t)(OV_TEMPERATURE_THRESHOLD_d),
-  .hOverTempDeactThreshold = (uint16_t)(OV_TEMPERATURE_THRESHOLD_d - OV_TEMPERATURE_HYSTERESIS_d),
-  .hSensitivity            = (int16_t)(ADC_REFERENCE_VOLTAGE/dV_dT),
-  .wV0                     = (uint16_t)((V0_V * 65536) / ADC_REFERENCE_VOLTAGE),
-  .hT0                     = T0_C,
+  .bSensorType     = VIRTUAL_SENSOR,
+  .hExpectedTemp_d = 555,
+  .hExpectedTemp_C = M1_VIRTUAL_HEAT_SINK_TEMPERATURE_VALUE,
 };
 
 /**
@@ -101,6 +125,7 @@ RDivider_Handle_t BusVoltageSensor_M1 =
   .UnderVoltageThreshold      =  UNDERVOLTAGE_THRESHOLD_d,
 };
 
+EncAlign_Handle_t *pEAC[NBR_OF_MOTORS];
 PWMC_Handle_t *pwmcHandle[NBR_OF_MOTORS];
 
 /* USER CODE BEGIN Additional configuration */
