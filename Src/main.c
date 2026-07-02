@@ -139,7 +139,6 @@ int main(void)
   soes_cfg.watchdog_cnt = 150;
 
   Obj.Parameters.Lan9252Gpi = LAN9252_GPIO_ReadInputs();
-  Obj.Parameters.Lan9252GpioDirection = LAN9252_GPIO_ReadDirection();
   Obj.Parameters.Lan9252Gpo = LAN9252_GPIO_ReadOutputs();
   Obj.Parameters.McuLed = 0U;
   Obj.Parameters.ControlWord = 0U;

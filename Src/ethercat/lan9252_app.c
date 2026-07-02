@@ -11,7 +11,6 @@
 
 /* LAN9252 register addresses */
 #define LAN9252_REG_ID_REV      0x0050U   /* Chip ID[31:16] should be 0x9252 */
-#define LAN9252_REG_GPIO_DIR    0x0152U
 #define LAN9252_REG_GPIO_OUT    0x0F10U
 #define LAN9252_REG_GPIO_IN     0x0F18U
 
@@ -88,19 +87,9 @@ uint16_t LAN9252_GPIO_ReadInputs(void)
     return LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_IN);
 }
 
-uint16_t LAN9252_GPIO_ReadDirection(void)
-{
-    return LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_DIR);
-}
-
 uint16_t LAN9252_GPIO_ReadOutputs(void)
 {
     return LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_OUT);
-}
-
-void LAN9252_GPIO_WriteDirection(uint16_t value)
-{
-    LAN9252_SPI_WriteReg16(LAN9252_REG_GPIO_DIR, value);
 }
 
 void LAN9252_GPIO_WriteOutputs(uint16_t value)
@@ -123,7 +112,6 @@ void cb_set_outputs(void)
         &Obj.Parameters.StatusWord,
         &Obj.Parameters.OperationModeDisplay);
 
-    LAN9252_GPIO_WriteDirection(Obj.Parameters.Lan9252GpioDirection);
     LAN9252_GPIO_WriteOutputs(Obj.Parameters.Lan9252Gpo);
 
     /* HAL_GPIO_WritePin(
