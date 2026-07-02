@@ -14,12 +14,12 @@
             "hidden": true,
             "inherits": "default",
             "cacheVariables": {
-                "CMAKE_MAKE_PROGRAM": "$env{CUBE_NINJA}"
+                "CMAKE_MAKE_PROGRAM": "$env{CMAKE_MAKE_PROGRAM}"
             }
         },
         {
             "name": "Debug",
-            "inherits": "default",
+            "inherits": "windows-ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -33,7 +33,7 @@
         },
         {
             "name": "Release",
-            "inherits": "default",
+            "inherits": "windows-ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
