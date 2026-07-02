@@ -662,7 +662,7 @@
 							</DataType>
 							<DataType>
 								<Name>DT1A00</Name>
-								<BitSize>112</BitSize>
+								<BitSize>144</BitSize>
 								<SubItem>
 									<SubIdx>0</SubIdx>
 									<Name>SubIndex 000</Name>
@@ -702,6 +702,17 @@
 									<Type>UDINT</Type>
 									<BitSize>32</BitSize>
 									<BitOffs>80</BitOffs>
+									<Flags>
+										<Access>ro</Access>
+										<Category>o</Category>
+									</Flags>
+								</SubItem>
+								<SubItem>
+									<SubIdx>4</SubIdx>
+									<Name>SubIndex 004</Name>
+									<Type>UDINT</Type>
+									<BitSize>32</BitSize>
+									<BitOffs>112</BitOffs>
 									<Flags>
 										<Access>ro</Access>
 										<Category>o</Category>
@@ -1289,12 +1300,13 @@
 								<Index>#x1a00</Index>
 								<Name>Inputs</Name>
 								<Type>DT1A00</Type>
-								<BitSize>112</BitSize>
+								<BitSize>144</BitSize>
 								<Info>
-									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>03</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>04</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 001</Name><Info><DefaultData>10004160</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 002</Name><Info><DefaultData>08006160</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 003</Name><Info><DefaultData>10010160</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 004</Name><Info><DefaultData>20006460</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
 									<Access>ro</Access>
@@ -1376,6 +1388,14 @@
 								<Type>SINT</Type>
 								<BitSize>8</BitSize>
 								<Info><SubItem><Name>Modes of Operation Display</Name><Info><DefaultData>00</DefaultData></Info></SubItem></Info>
+								<Flags><Access>ro</Access><Category>o</Category><PdoMapping>T</PdoMapping></Flags>
+							</Object>
+							<Object>
+								<Index>#x6064</Index>
+								<Name>Position Actual Value</Name>
+								<Type>DINT</Type>
+								<BitSize>32</BitSize>
+								<Info><SubItem><Name>Position Actual Value</Name><Info><DefaultData>00000000</DefaultData></Info></SubItem></Info>
 								<Flags><Access>ro</Access><Category>o</Category><PdoMapping>T</PdoMapping></Flags>
 							</Object>
 							<Object>
@@ -1465,6 +1485,7 @@
 					<Entry><Index DependOnSlot="true">#x6041</Index><SubIndex>0</SubIndex><BitLen>16</BitLen><Name>Statusword</Name><DataType>UINT</DataType></Entry>
 					<Entry><Index DependOnSlot="true">#x6061</Index><SubIndex>0</SubIndex><BitLen>8</BitLen><Name>Modes of Operation Display</Name><DataType>SINT</DataType></Entry>
 					<Entry><Index DependOnSlot="true">#x6001</Index><SubIndex>1</SubIndex><BitLen>16</BitLen><Name>LAN9252 GPI</Name><DataType>UINT</DataType></Entry>
+					<Entry><Index DependOnSlot="true">#x6064</Index><SubIndex>0</SubIndex><BitLen>32</BitLen><Name>Position Actual Value</Name><DataType>DINT</DataType></Entry>
 				</TxPdo>
 				<Profile>
 					<ProfileNo>402</ProfileNo>

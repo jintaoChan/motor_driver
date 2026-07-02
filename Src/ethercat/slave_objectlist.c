@@ -25,6 +25,7 @@ static const char acName1A00_00[] = "Max SubIndex";
 static const char acName1A00_01[] = "Status Word";
 static const char acName1A00_02[] = "Modes of Operation Display";
 static const char acName1A00_03[] = "LAN9252 GPI";
+static const char acName1A00_04[] = "Position Actual Value";
 static const char acName1C00[] = "Sync Manager Communication Type";
 static const char acName1C00_00[] = "Max SubIndex";
 static const char acName1C00_01[] = "Communications Type SM0";
@@ -41,6 +42,7 @@ static const char acName6040[] = "Controlword";
 static const char acName6041[] = "Statusword";
 static const char acName6060[] = "Modes of Operation";
 static const char acName6061[] = "Modes of Operation Display";
+static const char acName6064[] = "Position Actual Value";
 static const char acName6001[] = "LAN9252 Inputs";
 static const char acName6001_00[] = "Max SubIndex";
 static const char acName6001_01[] = "LAN9252 GPI";
@@ -78,10 +80,11 @@ const _objd SDO1600[] = {
     {0x05, DTYPE_UNSIGNED32, 32, ATYPE_RO, acName1600_05, 0x70010308, NULL},
 };
 const _objd SDO1A00[] = {
-    {0x00, DTYPE_UNSIGNED8, 8, ATYPE_RO, acName1A00_00, 3, NULL},
+    {0x00, DTYPE_UNSIGNED8, 8, ATYPE_RO, acName1A00_00, 4, NULL},
     {0x01, DTYPE_UNSIGNED32, 32, ATYPE_RO, acName1A00_01, 0x60410010, NULL},
     {0x02, DTYPE_UNSIGNED32, 32, ATYPE_RO, acName1A00_02, 0x60610008, NULL},
     {0x03, DTYPE_UNSIGNED32, 32, ATYPE_RO, acName1A00_03, 0x60010110, NULL},
+    {0x04, DTYPE_UNSIGNED32, 32, ATYPE_RO, acName1A00_04, 0x60640020, NULL},
 };
 const _objd SDO1C00[] = {
     {0x00, DTYPE_UNSIGNED8, 8, ATYPE_RO, acName1C00_00, 4, NULL},
@@ -110,6 +113,9 @@ const _objd SDO6060[] = {
 const _objd SDO6061[] = {
     {0x00, DTYPE_INTEGER8, 8, ATYPE_RO, acName6061, 0, &Obj.Parameters.OperationModeDisplay},
 };
+const _objd SDO6064[] = {
+    {0x00, DTYPE_INTEGER32, 32, ATYPE_RO, acName6064, 0, &Obj.Parameters.PositionActualValue},
+};
 const _objd SDO6001[] = {
     {0x00, DTYPE_UNSIGNED8, 8, ATYPE_RO, acName6001_00, 1, NULL},
     {0x01, DTYPE_UNSIGNED16, 16, ATYPE_RO, acName6001_01, 0, &Obj.Parameters.Lan9252Gpi},
@@ -128,7 +134,7 @@ const _objectlist SDOobjects[] = {
     {0x100A, OTYPE_VAR, 0, 0, acName100A, SDO100A},
     {0x1018, OTYPE_RECORD, 4, 0, acName1018, SDO1018},
     {0x1600, OTYPE_RECORD, 5, 0, acName1600, SDO1600},
-    {0x1A00, OTYPE_RECORD, 3, 0, acName1A00, SDO1A00},
+    {0x1A00, OTYPE_RECORD, 4, 0, acName1A00, SDO1A00},
     {0x1C00, OTYPE_ARRAY, 4, 0, acName1C00, SDO1C00},
     {0x1C12, OTYPE_ARRAY, 1, 0, acName1C12, SDO1C12},
     {0x1C13, OTYPE_ARRAY, 1, 0, acName1C13, SDO1C13},
@@ -136,6 +142,7 @@ const _objectlist SDOobjects[] = {
     {0x6041, OTYPE_VAR, 0, 0, acName6041, SDO6041},
     {0x6060, OTYPE_VAR, 0, 0, acName6060, SDO6060},
     {0x6061, OTYPE_VAR, 0, 0, acName6061, SDO6061},
+    {0x6064, OTYPE_VAR, 0, 0, acName6064, SDO6064},
     {0x6001, OTYPE_RECORD, 1, 0, acName6001, SDO6001},
     {0x7001, OTYPE_RECORD, 3, 0, acName7001, SDO7001},
     {0xffff, 0xff, 0xff, 0xff, NULL, NULL},

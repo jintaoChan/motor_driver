@@ -36,6 +36,7 @@
 #include "mc_app_hooks.h"
 
 /* USER CODE BEGIN Includes */
+#include "encoder/biss_encoder.h"
 
 /* USER CODE END Includes */
 
@@ -47,7 +48,7 @@
 
 /* USER CODE END Private define */
 
-#define VBUS_TEMP_ERR_MASK (MC_OVER_VOLT| MC_UNDER_VOLT| MC_OVER_TEMP)
+#define VBUS_TEMP_ERR_MASK ~(0 | 0 | MC_OVER_TEMP)
 /* Private variables----------------------------------------------------------*/
 
 static uint16_t hMFTaskCounterM1 = 0; //cstat !MISRAC2012-Rule-8.9_a
@@ -56,6 +57,10 @@ static volatile uint16_t hStopPermanencyCounterM1 = ((uint16_t)0);
 static volatile uint8_t bMCBootCompleted = ((uint8_t)0);
 
 /* USER CODE BEGIN Private Variables */
+extern volatile uint32_t g_biss_position;
+extern volatile uint8_t g_biss_error;
+extern volatile uint8_t g_biss_warning;
+extern volatile uint8_t g_biss_crc_ok;
 
 /* USER CODE END Private Variables */
 
@@ -120,7 +125,6 @@ __weak void MCboot( MCI_Handle_t* pMCIList[NBR_OF_MOTORS] )
     /*******************************************************/
     /*   Temperature measurement component initialization  */
     /*******************************************************/
-    (void)RCM_RegisterRegConv(&TempRegConv_M1);
     NTC_Init(&TempSensor_M1);
 
     /* Applicative hook in MCBoot() */
@@ -307,6 +311,7 @@ __attribute__((section (".ccmram")))
 __weak uint8_t TSK_HighFrequencyTask(void)
 {
   uint8_t bMotorNbr;
+  BISS_Frame_t frame;
   bMotorNbr = 0;
 
   /* USER CODE BEGIN HighFrequencyTask 0 */
@@ -315,6 +320,13 @@ __weak uint8_t TSK_HighFrequencyTask(void)
   FOC_HighFrequencyTask(bMotorNbr);
 
   /* USER CODE BEGIN HighFrequencyTask 1 */
+  if (BISS_ReadFrame(NULL, &frame))
+  {
+    g_biss_position = frame.position;
+    g_biss_error = frame.error;
+    g_biss_warning = frame.warning;
+    g_biss_crc_ok = frame.crc_ok;
+  }
 
   /* USER CODE END HighFrequencyTask 1 */
   GLOBAL_TIMESTAMP++;
@@ -368,15 +380,6 @@ __weak void TSK_SafetyTask_PWMOFF(uint8_t bMotor)
   uint8_t lbmotor = M1;
   const uint16_t errMask[NBR_OF_MOTORS] = {VBUS_TEMP_ERR_MASK};
   /* Check for fault if FW protection is activated. It returns MC_OVER_TEMP or MC_NO_ERROR */
-  if (M1 == bMotor)
-  {
-    uint16_t rawValueM1 = RCM_GetRegularConv(&TempRegConv_M1);
-    CodeReturn |= errMask[bMotor] & NTC_CalcAvTemp(&TempSensor_M1, rawValueM1);
-  }
-  else
-  {
-    /* Nothing to do */
-  }
 
 /* Due to warning array subscript 1 is above array bounds of PWMC_Handle_t *[1] [-Warray-bounds] */
    CodeReturn |= PWMC_IsFaultOccurred(pwmcHandle[lbmotor]);     /* check for fault. It return MC_OVER_CURR or MC_NO_FAULTS
@@ -395,6 +398,15 @@ __weak void TSK_SafetyTask_PWMOFF(uint8_t bMotor)
 
   if (MCI_GetFaultState(&Mci[bMotor]) != (uint32_t)MC_NO_FAULTS)
   {
+    /* Reset Encoder state */
+    if (pEAC[bMotor] != MC_NULL)
+    {
+      EAC_SetRestartState(pEAC[bMotor], false);
+    }
+    else
+    {
+      /* Nothing to do */
+    }
     PWMC_SwitchOffPWM(pwmcHandle[bMotor]);
     FOC_Clear(bMotor);
 
@@ -451,6 +463,8 @@ __weak void UI_HandleStartStopButton_cb (void)
 __weak void mc_lock_pins (void)
 {
 LL_GPIO_LockPin(M1_CURR_AMPL_W_GPIO_Port, M1_CURR_AMPL_W_Pin);
+LL_GPIO_LockPin(M1_ENCODER_A_GPIO_Port, M1_ENCODER_A_Pin);
+LL_GPIO_LockPin(M1_ENCODER_B_GPIO_Port, M1_ENCODER_B_Pin);
 LL_GPIO_LockPin(M1_PWM_UH_GPIO_Port, M1_PWM_UH_Pin);
 LL_GPIO_LockPin(M1_PWM_VH_GPIO_Port, M1_PWM_VH_Pin);
 LL_GPIO_LockPin(M1_OCP_GPIO_Port, M1_OCP_Pin);
@@ -458,7 +472,6 @@ LL_GPIO_LockPin(M1_PWM_VL_GPIO_Port, M1_PWM_VL_Pin);
 LL_GPIO_LockPin(M1_PWM_WH_GPIO_Port, M1_PWM_WH_Pin);
 LL_GPIO_LockPin(M1_PWM_WL_GPIO_Port, M1_PWM_WL_Pin);
 LL_GPIO_LockPin(M1_PWM_UL_GPIO_Port, M1_PWM_UL_Pin);
-LL_GPIO_LockPin(M1_TEMPERATURE_GPIO_Port, M1_TEMPERATURE_Pin);
 LL_GPIO_LockPin(M1_BUS_VOLTAGE_GPIO_Port, M1_BUS_VOLTAGE_Pin);
 LL_GPIO_LockPin(M1_CURR_AMPL_U_GPIO_Port, M1_CURR_AMPL_U_Pin);
 LL_GPIO_LockPin(M1_CURR_AMPL_V_GPIO_Port, M1_CURR_AMPL_V_Pin);

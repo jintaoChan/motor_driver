@@ -11,6 +11,7 @@ typedef struct
         uint16_t StatusWord;
         int8_t OperationMode;
         int8_t OperationModeDisplay;
+        int32_t PositionActualValue;
         uint16_t Lan9252Gpi;
         uint16_t Lan9252GpioDirection;
         uint16_t Lan9252Gpo;

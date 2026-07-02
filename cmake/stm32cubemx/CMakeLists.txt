@@ -89,6 +89,8 @@ set(MotorControl_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/bus_voltage_sensor.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/circle_limitation.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/digital_output.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/enc_align_ctrl.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/encoder_speed_pos_fdbk.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/ntc_temperature_sensor.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/open_loop.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/pid_regulator.c
@@ -97,7 +99,6 @@ set(MotorControl_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/ramp_ext_mngr.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/revup_ctrl.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/speed_pos_fdbk.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/sto_pll_speed_pos_fdbk.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/virtual_speed_sensor.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/G4xx/Src/r3_2_g4xx_pwm_curr_fdbk.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../MCSDK_v6.4.2-Full/MotorControl/MCSDK/MCLib/Any/Src/mcpa.c
