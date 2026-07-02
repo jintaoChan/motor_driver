@@ -6,9 +6,15 @@
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
-		    "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake",
+            "toolchainFile": "${sourceDir}/cmake/gcc-arm-none-eabi.cmake",
+            "cacheVariables": {}
+        },
+        {
+            "name": "windows-ninja",
+            "hidden": true,
+            "inherits": "default",
             "cacheVariables": {
-                "CMAKE_MAKE_PROGRAM": "C:/Users/10100/AppData/Local/stm32cube/bundles/ninja/1.13.2+st.1/bin/ninja.exe"
+                "CMAKE_MAKE_PROGRAM": "$env{CUBE_NINJA}"
             }
         },
         {
@@ -19,8 +25,22 @@
             }
         },
         {
+            "name": "Debug-Windows",
+            "inherits": "windows-ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
             "name": "Release",
             "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "Release-Windows",
+            "inherits": "windows-ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
@@ -32,8 +52,16 @@
             "configurePreset": "Debug"
         },
         {
+            "name": "Debug-Windows",
+            "configurePreset": "Debug-Windows"
+        },
+        {
             "name": "Release",
             "configurePreset": "Release"
+        },
+        {
+            "name": "Release-Windows",
+            "configurePreset": "Release-Windows"
         }
     ]
 }
