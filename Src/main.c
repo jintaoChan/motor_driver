@@ -138,8 +138,6 @@ int main(void)
   soes_cfg.use_interrupt = 0;
   soes_cfg.watchdog_cnt = 150;
 
-  Obj.Parameters.Lan9252Gpi = LAN9252_GPIO_ReadInputs();
-  Obj.Parameters.Lan9252Gpo = LAN9252_GPIO_ReadOutputs();
   Obj.Parameters.McuLed = 0U;
   Obj.Parameters.ControlWord = 0U;
   Obj.Parameters.OperationMode = 0;
@@ -157,7 +155,7 @@ int main(void)
   while (1)
   {
 
-    ecat_slv();
+      ecat_slv();
     HAL_Delay(2);
     /* USER CODE END WHILE */
 

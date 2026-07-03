@@ -65,6 +65,18 @@ static void LAN9252_SPI_WriteReg16(uint16_t addr, uint16_t value)
     LAN9252_SPI_WriteReg(addr, reg);
 }
 
+static uint16_t LAN9252_ESC_ReadReg16(uint16_t addr)
+{
+  uint16_t value = 0U;
+  ESC_read(addr, &value, sizeof(value));
+  return value;
+}
+
+static void LAN9252_ESC_WriteReg16(uint16_t addr, uint16_t value)
+{
+  ESC_write(addr, &value, sizeof(value));
+}
+
 void LAN9252_SPI_Init(void)
 {
     uint32_t id = 0;
@@ -82,24 +94,9 @@ void LAN9252_SPI_Init(void)
     } while ((id >> 16) != 0x9252U);
 }
 
-uint16_t LAN9252_GPIO_ReadInputs(void)
-{
-    return LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_IN);
-}
-
-uint16_t LAN9252_GPIO_ReadOutputs(void)
-{
-    return LAN9252_SPI_ReadReg16(LAN9252_REG_GPIO_OUT);
-}
-
-void LAN9252_GPIO_WriteOutputs(uint16_t value)
-{
-    LAN9252_SPI_WriteReg16(LAN9252_REG_GPIO_OUT, value);
-}
-
 void cb_get_inputs(void)
 {
-    Obj.Parameters.Lan9252Gpi = LAN9252_GPIO_ReadInputs();
+    Obj.Parameters.Lan9252Gpi = LAN9252_ESC_ReadReg16(LAN9252_REG_GPIO_IN);
     Obj.Parameters.PositionActualValue = (int32_t)g_biss_position;
 }
 
@@ -112,7 +109,7 @@ void cb_set_outputs(void)
         &Obj.Parameters.StatusWord,
         &Obj.Parameters.OperationModeDisplay);
 
-    LAN9252_GPIO_WriteOutputs(Obj.Parameters.Lan9252Gpo);
+    LAN9252_ESC_WriteReg16(LAN9252_REG_GPIO_OUT, Obj.Parameters.Lan9252Gpo);
 
     /* HAL_GPIO_WritePin(
         LD2_GPIO_Port,

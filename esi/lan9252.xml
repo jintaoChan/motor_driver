@@ -1265,8 +1265,8 @@
 									<SubItem><Name>SubIndex 000</Name><Info><DefaultData>04</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 001</Name><Info><DefaultData>10004060</DefaultData></Info></SubItem>
 									<SubItem><Name>SubIndex 002</Name><Info><DefaultData>08006060</DefaultData></Info></SubItem>
-									<SubItem><Name>SubIndex 004</Name><Info><DefaultData>10010170</DefaultData></Info></SubItem>
-									<SubItem><Name>SubIndex 005</Name><Info><DefaultData>08020170</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 003</Name><Info><DefaultData>10010170</DefaultData></Info></SubItem>
+									<SubItem><Name>SubIndex 004</Name><Info><DefaultData>08020170</DefaultData></Info></SubItem>
 								</Info>
 								<Flags>
 									<Access>ro</Access>

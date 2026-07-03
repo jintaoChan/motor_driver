@@ -8,12 +8,8 @@ extern "C" {
 #endif
 
 void LAN9252_SPI_Init(void);
-
-uint16_t LAN9252_GPIO_ReadInputs(void);
-uint16_t LAN9252_GPIO_ReadDirection(void);
-uint16_t LAN9252_GPIO_ReadOutputs(void);
-void LAN9252_GPIO_WriteDirection(uint16_t value);
-void LAN9252_GPIO_WriteOutputs(uint16_t value);
+static uint16_t LAN9252_ESC_ReadReg16(uint16_t addr);
+static void LAN9252_ESC_WriteReg16(uint16_t addr, uint16_t value);
 
 void cb_get_inputs(void);
 void cb_set_outputs(void);

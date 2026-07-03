@@ -319,14 +319,6 @@ __weak uint8_t TSK_HighFrequencyTask(void)
   /* USER CODE END HighFrequencyTask 0 */
   FOC_HighFrequencyTask(bMotorNbr);
 
-  /* USER CODE BEGIN HighFrequencyTask 1 */
-  if (BISS_ReadFrame(NULL, &frame))
-  {
-    g_biss_position = frame.position;
-    g_biss_error = frame.error;
-    g_biss_warning = frame.warning;
-    g_biss_crc_ok = frame.crc_ok;
-  }
 
   /* USER CODE END HighFrequencyTask 1 */
   GLOBAL_TIMESTAMP++;
