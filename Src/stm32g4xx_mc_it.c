@@ -76,7 +76,6 @@ void ADC1_2_IRQHandler(void)
 
   /* USER CODE END ADC1_2_IRQn 0 */
   LL_ADC_ClearFlag_JEOS(ADC1);
-  LL_ADC_ClearFlag_JEOS(ADC2);
   (void)TSK_HighFrequencyTask();
 
   /* USER CODE BEGIN ADC1_2_IRQn 1 */

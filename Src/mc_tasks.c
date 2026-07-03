@@ -311,7 +311,6 @@ __attribute__((section (".ccmram")))
 __weak uint8_t TSK_HighFrequencyTask(void)
 {
   uint8_t bMotorNbr;
-  BISS_Frame_t frame;
   bMotorNbr = 0;
 
   /* USER CODE BEGIN HighFrequencyTask 0 */
@@ -319,6 +318,7 @@ __weak uint8_t TSK_HighFrequencyTask(void)
   /* USER CODE END HighFrequencyTask 0 */
   FOC_HighFrequencyTask(bMotorNbr);
 
+  /* USER CODE BEGIN HighFrequencyTask 1 */
 
   /* USER CODE END HighFrequencyTask 1 */
   GLOBAL_TIMESTAMP++;

@@ -1,0 +1,37 @@
+# Default: normalize text files and store as LF in repo
+* text=auto eol=lf
+
+# Keep Windows command scripts with CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Common source/header and build metadata (explicit for clarity)
+*.c   text eol=lf
+*.h   text eol=lf
+*.s   text eol=lf
+*.S   text eol=lf
+*.ld  text eol=lf
+*.cmake text eol=lf
+*.txt text eol=lf
+*.ioc text eol=lf
+*.xml text eol=lf
+*.ftl text eol=lf
+*.wbdef text eol=lf
+*.settings text eol=lf
+
+# Treat archives and firmware images as binary
+*.a   binary
+*.o   binary
+*.elf binary
+*.axf binary
+*.bin binary
+*.hex binary
+*.map binary
+*.dmp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
+*.7z  binary

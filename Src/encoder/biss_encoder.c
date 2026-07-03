@@ -1,5 +1,4 @@
 #include "encoder/biss_encoder.h"
-#include "main.h"
 
 static const uint8_t BissFrameBits = 25U;
 static const uint8_t BissDataBits = 19U;
@@ -11,7 +10,7 @@ static const uint8_t BissCdsBits = 1U;
 static const uint8_t BissSampleBits = 48U;
 static const uint8_t BissTrackWindow = 2U;
 
-#define BISS_CLK_HZ 1000000UL
+#define BISS_SAMPLE_BYTES 6U
 
 static int8_t g_lockedFrameStart = -1;
 static uint8_t g_lockFailCount = 0U;
@@ -20,48 +19,6 @@ static BISS_RuntimeInfo_t g_runtimeInfo = {0xFFU, 0U, 0U};
 volatile uint8_t g_biss_cfg_shift = 0xFFU;
 volatile uint8_t g_biss_cfg_byte_swap = 0U;
 volatile uint32_t g_biss_raw_be = 0U;
-
-static void BISS_DelayCycles(uint32_t cycles)
-{
-  uint32_t start = DWT->CYCCNT;
-  while ((uint32_t)(DWT->CYCCNT - start) < cycles)
-  {
-    /* busy wait */
-  }
-}
-
-static uint32_t BISS_HalfPeriodCycles(void)
-{
-  static uint8_t dwtReady = 0U;
-
-  if (dwtReady == 0U)
-  {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CYCCNT = 0U;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    dwtReady = 1U;
-  }
-
-  {
-    uint32_t halfCycles = SystemCoreClock / (2UL * BISS_CLK_HZ);
-    if (halfCycles == 0U)
-    {
-      halfCycles = 1U;
-    }
-    return halfCycles;
-  }
-}
-
-static uint32_t BISS_SampleOffsetCycles(uint32_t halfCycles)
-{
-  /* Sample near the middle of CLK high to maximize setup/hold margin. */
-  uint32_t offset = halfCycles / 2UL;
-  if (offset == 0U)
-  {
-    offset = 1U;
-  }
-  return offset;
-}
 
 static uint8_t BISS_CRC6_Calc(uint32_t data19)
 {
@@ -142,6 +99,8 @@ static bool BISS_TryDecodeFrame25(uint32_t frame25, BISS_Frame_t *out)
 
 bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
 {
+  uint8_t tx[BISS_SAMPLE_BYTES] = {0U};
+  uint8_t rx[BISS_SAMPLE_BYTES] = {0U};
   uint64_t raw48 = 0ULL;
   uint8_t i;
   uint8_t frameStart;
@@ -149,35 +108,20 @@ bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
   uint8_t startBit;
   const uint8_t overheadBits = (uint8_t)(BissAckBits + BissStartBits + BissCdsBits);
   const uint8_t maxAckStart = (uint8_t)(BissSampleBits - overheadBits - BissFrameBits);
-  GPIO_TypeDef *clkPort = ENCODER_CLK_GPIO_Port;
-  GPIO_TypeDef *dataPort = ENCODER_DATA_GPIO_Port;
-  uint32_t clkMask = (uint32_t)ENCODER_CLK_Pin;
-  uint32_t dataMask = (uint32_t)ENCODER_DATA_Pin;
-  uint32_t halfCycles;
-  uint32_t sampleOffset;
-  uint32_t remainHigh;
 
-  if (out == NULL)
+  if ((hspi == NULL) || (out == NULL))
   {
     return false;
   }
 
-  (void)hspi;
-  halfCycles = BISS_HalfPeriodCycles();
-  sampleOffset = BISS_SampleOffsetCycles(halfCycles);
-  remainHigh = halfCycles - sampleOffset;
-
-  clkPort->BSRR = (clkMask << 16U);
-  BISS_DelayCycles(halfCycles);
-
-  for (i = 0U; i < BissSampleBits; i++)
+  if (HAL_SPI_TransmitReceive(hspi, tx, rx, BISS_SAMPLE_BYTES, 20U) != HAL_OK)
   {
-    clkPort->BSRR = clkMask;
-    BISS_DelayCycles(sampleOffset);
-    raw48 = (raw48 << 1U) | ((dataPort->IDR & dataMask) != 0U ? 1ULL : 0ULL);
-    BISS_DelayCycles(remainHigh);
-    clkPort->BSRR = (clkMask << 16U);
-    BISS_DelayCycles(halfCycles);
+    return false;
+  }
+
+  for (i = 0U; i < BISS_SAMPLE_BYTES; i++)
+  {
+    raw48 = (raw48 << 8U) | (uint64_t)rx[i];
   }
 
   g_runtimeInfo.raw_msb32 = (uint32_t)(raw48 >> 16U);

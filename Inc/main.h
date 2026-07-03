@@ -75,6 +75,8 @@ void Error_Handler(void);
 #define UART_TX_GPIO_Port GPIOA
 #define UART_RX_Pin GPIO_PIN_3
 #define UART_RX_GPIO_Port GPIOA
+#define MCU_LED_Pin GPIO_PIN_5
+#define MCU_LED_GPIO_Port GPIOA
 #define M1_OCP_Pin GPIO_PIN_6
 #define M1_OCP_GPIO_Port GPIOA
 #define M1_PWM_UL_Pin GPIO_PIN_7
