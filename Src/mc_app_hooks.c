@@ -55,11 +55,6 @@ __weak void MC_APP_BootHook(void)
 
 /* USER CODE BEGIN BootHook */
 
-#if (MC_APP_STANDALONE_BRINGUP_ENABLE != 0)
-  mc_app_bringup_state = MC_APP_BRINGUP_DISABLED;
-#else
-  mc_app_bringup_state = MC_APP_BRINGUP_FAULTED;
-#endif
 
 /* USER CODE END BootHook */
 }
