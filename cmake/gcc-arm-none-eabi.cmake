@@ -36,10 +36,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TARGET_FLAGS}")
 set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS} -x assembler-with-cpp -MMD -MP")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fdata-sections -ffunction-sections")
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g3")
+# Optimization level for Debug builds. Override via preset cacheVariables or
+# cmake -DDEBUG_OPT=O0 to get a fully-debuggable build.
+set(DEBUG_OPT "O2" CACHE STRING "Debug optimization: O0=all vars visible, O2=fast")
+set(CMAKE_C_FLAGS_DEBUG   "-${DEBUG_OPT} -g3")
 set(CMAKE_C_FLAGS_RELEASE "-Os -g0")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os -g0")
+set(CMAKE_CXX_FLAGS_DEBUG   "-${DEBUG_OPT} -g3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -fno-exceptions -fno-threadsafe-statics")
 

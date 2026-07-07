@@ -61,6 +61,7 @@ extern volatile uint32_t g_biss_position;
 extern volatile uint8_t g_biss_error;
 extern volatile uint8_t g_biss_warning;
 extern volatile uint8_t g_biss_crc_ok;
+extern SPI_HandleTypeDef hspi1;  /* SPI handle for BiSS encoder */
 
 /* USER CODE END Private Variables */
 
@@ -314,7 +315,13 @@ __weak uint8_t TSK_HighFrequencyTask(void)
   bMotorNbr = 0;
 
   /* USER CODE BEGIN HighFrequencyTask 0 */
-
+  /* BiSS DMA watchdog: restart if the auto-restart chain broke.
+   * Normal path: DMA ISR restarts immediately on completion (~18 us).
+   * Check != BUSY to also recover from ERROR state (not just IDLE). */
+  if (g_biss_dma_state != BISS_DMA_BUSY)
+  {
+    (void)BISS_StartDmaRead(&hspi1);
+  }
   /* USER CODE END HighFrequencyTask 0 */
   FOC_HighFrequencyTask(bMotorNbr);
 

@@ -1,5 +1,7 @@
 #include "encoder/biss_encoder.h"
 
+static bool BISS_DecodeRaw48(uint64_t raw48, BISS_Frame_t *out);
+
 static const uint8_t BissFrameBits = 25U;
 static const uint8_t BissDataBits = 19U;
 static const uint8_t BissPosBits = 17U;
@@ -103,11 +105,6 @@ bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
   uint8_t rx[BISS_SAMPLE_BYTES] = {0U};
   uint64_t raw48 = 0ULL;
   uint8_t i;
-  uint8_t frameStart;
-  uint8_t ackStart;
-  uint8_t startBit;
-  const uint8_t overheadBits = (uint8_t)(BissAckBits + BissStartBits + BissCdsBits);
-  const uint8_t maxAckStart = (uint8_t)(BissSampleBits - overheadBits - BissFrameBits);
 
   if ((hspi == NULL) || (out == NULL))
   {
@@ -129,15 +126,33 @@ bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
   g_biss_raw_be = g_runtimeInfo.raw_msb32;
   g_biss_cfg_byte_swap = g_runtimeInfo.byte_swap;
 
+  return BISS_DecodeRaw48(raw48, out);
+}
+
+void BISS_GetRuntimeInfo(BISS_RuntimeInfo_t *out)
+{
+  if (out != NULL)
+  {
+    *out = g_runtimeInfo;
+  }
+}
+
+/* Shared decode helper used by both BISS_ReadFrame and BISS_PollDmaResult */
+static bool BISS_DecodeRaw48(uint64_t raw48, BISS_Frame_t *out)
+{
+  uint8_t i;
+  uint8_t frameStart;
+  uint8_t ackStart;
+  uint8_t startBit;
+  const uint8_t overheadBits = (uint8_t)(BissAckBits + BissStartBits + BissCdsBits);
+  const uint8_t maxAckStart = (uint8_t)(BissSampleBits - overheadBits - BissFrameBits);
+
   if (g_lockedFrameStart >= 0)
   {
     int16_t start = (int16_t)g_lockedFrameStart - (int16_t)BissTrackWindow;
-    int16_t end = (int16_t)g_lockedFrameStart + (int16_t)BissTrackWindow;
+    int16_t end   = (int16_t)g_lockedFrameStart + (int16_t)BissTrackWindow;
 
-    if (start < 0)
-    {
-      start = 0;
-    }
+    if (start < 0) { start = 0; }
     if (end > (int16_t)(BissSampleBits - BissFrameBits))
     {
       end = (int16_t)(BissSampleBits - BissFrameBits);
@@ -175,18 +190,10 @@ bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
         break;
       }
     }
+    if (!ackLow) { continue; }
 
-    if (!ackLow)
-    {
-      continue;
-    }
-
-    /* BiSS-C START bit should be high right after ACK low window. */
     startBit = BISS_GetBit48(raw48, (uint8_t)(ackStart + BissAckBits));
-    if (startBit == 0U)
-    {
-      continue;
-    }
+    if (startBit == 0U) { continue; }
 
     frameStart = (uint8_t)(ackStart + overheadBits);
     if ((uint16_t)frameStart + (uint16_t)BissFrameBits <= (uint16_t)BissSampleBits)
@@ -207,10 +214,180 @@ bool BISS_ReadFrame(SPI_HandleTypeDef *hspi, BISS_Frame_t *out)
   return false;
 }
 
-void BISS_GetRuntimeInfo(BISS_RuntimeInfo_t *out)
+/* ---------------------------------------------------------------------------
+ * DMA non-blocking read path
+ * ---------------------------------------------------------------------------
+ * g_biss_dma_tx is always zero (master sends dummy bytes to clock the slave).
+ * g_biss_dma_rx is written by DMA hardware independently of the CPU, so
+ * TIM1_UP or any other high-priority interrupt cannot corrupt the transfer.
+ * --------------------------------------------------------------------------- */
+static uint8_t g_biss_dma_tx[BISS_SAMPLE_BYTES] = {0U};
+static uint8_t g_biss_dma_rx[BISS_SAMPLE_BYTES];
+static SPI_HandleTypeDef *g_biss_dma_hspi = NULL;
+
+volatile BISS_DmaState_t g_biss_dma_state = BISS_DMA_IDLE;
+
+/* Decoded outputs - written by the DMA ISR, read by FOC / main loop */
+volatile uint32_t g_biss_position = 0U;
+volatile uint8_t  g_biss_error    = 0U;
+volatile uint8_t  g_biss_warning  = 0U;
+volatile uint8_t  g_biss_crc_ok   = 0U;
+
+
+/* Check CRC once every N DMA completions.  Between checks, position bits
+ * are extracted directly from the locked frame-start offset, eliminating
+ * the window scan and keeping ISR execution time minimal.                */
+#define BISS_CRC_CHECK_INTERVAL 20U
+static uint16_t g_crc_skip_counter = 0U;
+
+bool BISS_StartDmaRead(SPI_HandleTypeDef *hspi)
 {
-  if (out != NULL)
+  if (hspi == NULL)
   {
-    *out = g_runtimeInfo;
+    return false;
   }
+  if (g_biss_dma_state == BISS_DMA_BUSY)
+  {
+    return false; /* previous transfer still in flight */
+  }
+
+  /* If a previous error left the SPI handle in a bad state, reset it first */
+  if (g_biss_dma_state == BISS_DMA_ERROR)
+  {
+    HAL_SPI_Abort(hspi);
+  }
+
+  g_biss_dma_hspi = hspi;
+  g_biss_dma_state = BISS_DMA_BUSY;
+
+  if (HAL_SPI_TransmitReceive_DMA(hspi, g_biss_dma_tx, g_biss_dma_rx,
+                                   BISS_SAMPLE_BYTES) != HAL_OK)
+  {
+    g_biss_dma_state = BISS_DMA_ERROR;
+    return false;
+  }
+  return true;
+}
+
+bool BISS_PollDmaResult(BISS_Frame_t *out)
+{
+  uint64_t raw48;
+  uint8_t i;
+
+  if (out == NULL)
+  {
+    return false;
+  }
+  if (g_biss_dma_state != BISS_DMA_DONE)
+  {
+    return false;
+  }
+
+  /* Transition back to IDLE before decoding so caller can restart immediately */
+  g_biss_dma_state = BISS_DMA_IDLE;
+
+  raw48 = 0ULL;
+  for (i = 0U; i < BISS_SAMPLE_BYTES; i++)
+  {
+    raw48 = (raw48 << 8U) | (uint64_t)g_biss_dma_rx[i];
+  }
+
+  g_runtimeInfo.raw_msb32 = (uint32_t)(raw48 >> 16U);
+  g_runtimeInfo.byte_swap = 0U;
+  g_biss_raw_be = g_runtimeInfo.raw_msb32;
+  g_biss_cfg_byte_swap = g_runtimeInfo.byte_swap;
+
+  return BISS_DecodeRaw48(raw48, out);
+}
+
+/* Called from HAL_SPI_TxRxCpltCallback in main.c
+ *
+ * Fast path (locked):  extract position at the known frame-start offset;
+ *                      CRC is checked only every BISS_CRC_CHECK_INTERVAL
+ *                      completions - no window search.
+ * Slow path (unlocked): full scan via BISS_DecodeRaw48 to reacquire lock.
+ * DMA is restarted automatically so neither the main loop nor TIM1_UP
+ * needs to manage it.                                                     */
+void BISS_DmaCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  uint64_t raw48 = 0ULL;
+  uint8_t i;
+
+  if (hspi != g_biss_dma_hspi)
+  {
+    return;
+  }
+
+  /* Assemble 48-bit sample from the DMA receive buffer */
+  for (i = 0U; i < BISS_SAMPLE_BYTES; i++)
+  {
+    raw48 = (raw48 << 8U) | (uint64_t)g_biss_dma_rx[i];
+  }
+  g_runtimeInfo.raw_msb32 = (uint32_t)(raw48 >> 16U);
+  g_biss_raw_be = g_runtimeInfo.raw_msb32;
+
+  if (g_lockedFrameStart >= 0)
+  {
+    /* Fast path: known frame position, skip window search */
+    uint32_t frame25 = BISS_ExtractBits48(raw48, (uint8_t)g_lockedFrameStart, BissFrameBits);
+    uint32_t data19  = frame25 >> BissCrcBits;
+    bool     ok      = true;
+
+    g_crc_skip_counter++;
+    if (g_crc_skip_counter >= BISS_CRC_CHECK_INTERVAL)
+    {
+      uint8_t crc_rx       = (uint8_t)(frame25 & 0x3FU);
+      uint8_t crc_expected = (uint8_t)((~BISS_CRC6_Calc(data19)) & 0x3FU);
+      g_crc_skip_counter = 0U;
+      if (crc_rx != crc_expected)
+      {
+        /* CRC failed - drop lock, full scan on next completion */
+        g_lockedFrameStart = -1;
+        g_lockFailCount    = 0U;
+        g_biss_crc_ok      = 0U;
+        ok = false;
+      }
+    }
+
+    if (ok)
+    {
+      g_biss_position = (data19 >> 2U) & ((1UL << BissPosBits) - 1UL);
+      g_biss_error    = (uint8_t)((data19 >> 1U) & 0x01U);
+      g_biss_warning  = (uint8_t)(data19 & 0x01U);
+      g_biss_crc_ok   = 1U;
+    }
+  }
+  else
+  {
+    /* Slow path: full scan to find / reacquire frame alignment */
+    BISS_Frame_t recorrect;
+    if (BISS_DecodeRaw48(raw48, &recorrect))
+    {
+      g_biss_position = recorrect.position;
+      g_biss_error    = recorrect.error;
+      g_biss_warning  = recorrect.warning;
+      g_biss_crc_ok   = 1U;
+    }
+    else
+    {
+      g_biss_crc_ok = 0U;
+    }
+  }
+
+  /* Auto-restart: immediately queue the next 6-byte DMA transfer */
+  g_biss_dma_state = BISS_DMA_IDLE;
+  BISS_StartDmaRead(hspi);
+}
+
+/* Called from HAL_SPI_ErrorCallback in main.c */
+void BISS_DmaErrorCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi != g_biss_dma_hspi)
+  {
+    return;
+  }
+  g_biss_crc_ok = 0U;
+  HAL_SPI_Abort(hspi);
+  g_biss_dma_state = BISS_DMA_IDLE;
+  BISS_StartDmaRead(hspi);
 }

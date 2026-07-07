@@ -59,6 +59,8 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
+DMA_HandleTypeDef hdma_spi1_rx;
+DMA_HandleTypeDef hdma_spi1_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -66,10 +68,6 @@ _Objects Obj;
 
 static esc_cfg_t soes_cfg;
 
-volatile uint32_t g_biss_position = 0U;
-volatile uint8_t g_biss_error = 0U;
-volatile uint8_t g_biss_warning = 0U;
-volatile uint8_t g_biss_crc_ok = 0U;
 
 /* USER CODE END PV */
 
@@ -135,8 +133,6 @@ int main(void)
   MX_SPI3_Init();
   MX_SPI1_Init();
 
-  /* Initialize interrupts */
-  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
 
   LAN9252_SPI_Init();
@@ -155,21 +151,19 @@ int main(void)
   MX_NVIC_Init();
   /* USER CODE END 2 */
 
+  /* Kick off the first DMA read before entering the loop */
+  BISS_StartDmaRead(&hspi1);
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
   while (1)
   {
-    BISS_Frame_t frame;
-
     ecat_slv();
-    if (BISS_ReadFrame(&hspi2, &frame))
-    {
-      g_biss_position = frame.position;
-      g_biss_error = frame.error;
-      g_biss_warning = frame.warning;
-      g_biss_crc_ok = frame.crc_ok;
-    }
+
+    /* g_biss_position is updated automatically by the DMA completion ISR.
+     * DMA auto-restarts after each 6-byte transfer - no polling needed. */
+
     HAL_Delay(2);
     /* USER CODE END WHILE */
 
@@ -243,10 +237,10 @@ static void MX_NVIC_Init(void)
   HAL_NVIC_SetPriority(TIM1_BRK_TIM15_IRQn, 4, 1);
   HAL_NVIC_EnableIRQ(TIM1_BRK_TIM15_IRQn);
   /* TIM1_UP_TIM16_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(TIM1_UP_TIM16_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(TIM1_UP_TIM16_IRQn);
   /* ADC1_2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(ADC1_2_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(ADC1_2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
   /* EXTI15_10_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 3, 0);
@@ -798,6 +792,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* Forward DMA-complete and error events to the BiSS encoder driver. */
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  BISS_DmaCpltCallback(hspi);
+}
+
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+  BISS_DmaErrorCallback(hspi);
+}
 
 /* USER CODE END 4 */
 

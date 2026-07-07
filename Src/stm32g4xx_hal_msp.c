@@ -24,8 +24,9 @@
 
 /* USER CODE END Includes */
 extern DMA_HandleTypeDef hdma_usart2_rx;
-
 extern DMA_HandleTypeDef hdma_usart2_tx;
+extern DMA_HandleTypeDef hdma_spi1_rx;
+extern DMA_HandleTypeDef hdma_spi1_tx;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -338,7 +339,36 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /* USER CODE BEGIN SPI1_MspInit 1 */
+    /* DMA for SPI1: Channel2 = RX, Channel3 = TX
+     * Priority 3 keeps DMA completion below TIM1_UP (prio 0) and ADC (prio 2). */
+    hdma_spi1_rx.Instance                 = DMA1_Channel3;
+    hdma_spi1_rx.Init.Request             = DMA_REQUEST_SPI1_RX;
+    hdma_spi1_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    hdma_spi1_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_spi1_rx.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_spi1_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_spi1_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    hdma_spi1_rx.Init.Mode                = DMA_NORMAL;
+    hdma_spi1_rx.Init.Priority            = DMA_PRIORITY_LOW;
+    HAL_DMA_Init(&hdma_spi1_rx);
+    __HAL_LINKDMA(hspi, hdmarx, hdma_spi1_rx);
 
+    hdma_spi1_tx.Instance                 = DMA1_Channel4;
+    hdma_spi1_tx.Init.Request             = DMA_REQUEST_SPI1_TX;
+    hdma_spi1_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    hdma_spi1_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_spi1_tx.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_spi1_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_spi1_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    hdma_spi1_tx.Init.Mode                = DMA_NORMAL;
+    hdma_spi1_tx.Init.Priority            = DMA_PRIORITY_LOW;
+    HAL_DMA_Init(&hdma_spi1_tx);
+    __HAL_LINKDMA(hspi, hdmatx, hdma_spi1_tx);
+
+    HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 3U, 0U);
+    HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 3U, 0U);
+    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
     /* USER CODE END SPI1_MspInit 1 */
   }
   else if(hspi->Instance==SPI3)

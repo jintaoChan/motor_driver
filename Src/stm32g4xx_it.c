@@ -56,6 +56,8 @@
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_spi1_rx;
+extern DMA_HandleTypeDef hdma_spi1_tx;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -72,5 +74,24 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+
+/**
+ * @brief DMA1 Channel2 IRQ — SPI1 RX complete.
+ *        This fires when the 6-byte BiSS frame has been fully received by DMA.
+ *        The HAL will then call HAL_SPI_TxRxCpltCallback which sets
+ *        g_biss_dma_state = BISS_DMA_DONE.
+ */
+void DMA1_Channel3_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&hdma_spi1_rx);
+}
+
+/**
+ * @brief DMA1 Channel4 IRQ — SPI1 TX complete.
+ */
+void DMA1_Channel4_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(&hdma_spi1_tx);
+}
 
 /* USER CODE END 1 */
